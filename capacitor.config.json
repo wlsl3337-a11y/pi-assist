@@ -1,0 +1,8 @@
+{
+  "appId": "com.piassist.app",
+  "appName": "PI Assist",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}

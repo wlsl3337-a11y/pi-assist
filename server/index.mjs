@@ -44,7 +44,7 @@ app.post("/api/ai/analyze", async (req, res) => {
       if (typeof b !== "string" || b.length < 100 || b.length > 4_000_000)
         return res.status(400).json({ error: "이미지 크기가 허용 범위를 벗어났습니다." });
     }
-    console.log(`[ai] ${new Date().toISOString()} images=${images.length} promptChars=${prompt.length}`); // 내용 미기록
+    console.log(`[ai] ${new Date().toISOString()} images=${images.length} promptChars=${prompt.length}`);
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {

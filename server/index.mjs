@@ -51,7 +51,6 @@ app.post("/api/ai/analyze", async (req, res) => {
         "content-type": "application/json",
         "x-api-key": KEY,
         "anthropic-version": "2023-06-01",
-        "anthropic-workspace-id": "wrkspc_01PQt86vdHm2P1XmGDzgFFGS",
       },
       body: JSON.stringify({
         model: MODEL,

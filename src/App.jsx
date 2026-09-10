@@ -472,7 +472,7 @@ function parseAiJson(raw) {
 /* ESM 전용 메타 구문(import 메타)은 비-ESM 파서에서 SyntaxError를 유발하므로 사용하지 않는다.
    Vite: vite.config의 define이 __AI_PROXY_BASE__를 빌드타임 상수로 주입(.env의 VITE_AI_PROXY_BASE).
    Capacitor 등: 빌드 없이 globalThis.AI_PROXY_BASE로 런타임 재정의 가능. 기본값 "" = 같은 origin. */
-const AI_PROXY_BASE = "http://172.30.74.60:8787";
+const AI_PROXY_BASE = "https://pi-assist.onrender.com";
 
 async function callClaude(dataUrls, promptText) {
 console.log("AI CALL START", AI_PROXY_BASE);
@@ -512,6 +512,7 @@ function buildAnalysisPrompt(ctx) {
 
 컨텍스트: 부위=${ctx.location || "미상"}${sizeStr}${depthStr}
 ${ctx.multiTarget ? "\n대상 지정: 이 사진에는 병변이 여러 개 있습니다. 흰색 테두리의 청록색 원으로 표시된 병변 하나만 분석 대상입니다. 원 밖의 병변은 stage 판정·keyFindings·woundBed에 포함하지 말고, 필요하면 존재만 cautions에 한 줄로 언급하세요. 컨텍스트의 측정값도 표시된 병변의 값입니다." + (ctx.zoomHint ? " 두 번째 이미지는 표시된 병변만 확대한 것으로, 확대 이미지 중앙의 병변이 분석 대상입니다." : "") + "\n" : ""}
+${ctx.followUpCompare ? "\n경과 비교: 첫 번째 이미지는 이전 사정 사진이고 마지막 이미지는 현재 사정 사진입니다. 현재 사진의 stage는 현재 사진 기준으로 판정하고, healing은 두 사진에서 실제로 보이는 변화만 비교하세요.\n" : ""}
 핵심 원칙:
 A) 최종 판단은 의료진이 합니다. 이 출력은 "Suggested Stage" 참고 초안이며, 진단을 확정하는 표현을 쓰지 마세요.
 B) 사진에서 확인할 수 없는 것을 추측하지 마세요. "보이지 않음"과 "존재하지 않음"을 엄격히 구분하세요 — 구조물이 사진에서 보이지 않는다는 이유만으로 그 손상이 없다고 단정하지 마세요. 판단 근거가 불충분하면 suggestedStage="미정".
@@ -539,10 +540,12 @@ E) 사진만으로 상처의 실제 크기(cm)를 추정하지 마세요. 크기
 9) keyFindings에는 단계 판단에 사용한 사진 소견을 3~4개의 짧은 구(각 20자 이내)로 나열하세요. 관찰되지 않은 것은 "미확인"으로 표기하고(예: "근육·뼈 노출 미확인"), 불확실한 소견은 끝에 "(불확실)"을 붙이세요. "미확인"은 "없음"을 의미하지 않습니다.
 10) differentials에는 인접 분류를 배제했거나 판단을 보류한 이유를 최대 2개까지 {"stage","reason"} 형태로 쓰세요. reason은 25자 이내 한 구절로(예: "근육·뼈 노출 미확인, 배제 불가").
 11) rationale는 2~3문장으로 간결하게, 다음을 포함하세요: ①관찰된 주요 특징 ②해당 stage를 고려한 이유 ③인접 stage와의 감별 근거 ④필요한 임상 확인. 예: "전층 피부 및 조직 손상이 의심되며 피하지방 노출 소견이 관찰됩니다. 사진상 근육, 건, 연골 또는 뼈의 노출은 확인되지 않아 Stage 3가 제안됩니다. 다만 사진만으로 deeper tissue involvement를 완전히 배제할 수 없어 임상적 확인이 필요합니다."
+12) 경과 비교 사진이 제공된 경우 healing을 평가하세요. 이전→현재 순서로 비교하고, Stage가 낮아졌다는 이유만으로 호전이라고 판단하지 마세요. 사진만으로 상처 면적을 정량 계산하지 말고 눈에 보이는 변화만 사용하세요. 호전 근거는 상피화 진행, 건강한 granulation 증가, slough/eschar 감소, 상처 경계 수축 등을 우선합니다. 악화 의심 근거는 병변 확대, 새로운 괴사·검은색 변화, slough/eschar 증가, 새로운 수포·심부조직 노출 의심 등입니다. 촬영 거리·각도·조명 차이가 크면 healing="판단 불가"로 하세요.
+13) healing.status는 "호전"|"변화 없음"|"악화 의심"|"판단 불가" 중 하나만 사용하세요. healing.evidence는 실제 비교 근거를 최대 3개까지 짧게 쓰세요. 경과 비교 사진이 없으면 healing=null로 하세요.
 12) rationale, cautions, issues, keyFindings, differentials는 한국어로. 마크다운·설명문 없이, 줄바꿈이나 들여쓰기가 전혀 없는 압축된 JSON 객체 한 줄만 출력하세요. 응답이 길어져 잘리지 않도록 모든 항목을 간결하게 유지하세요.
 
 스키마:
-{"canAssess":boolean,"photoQuality":{"status":"PASS"|"CAUTION"|"FAIL","adequate":boolean,"issues":string[]},"suggestedStage":"1"|"2"|"3"|"4"|"Unstageable"|"DTPI"|"미정","blanchingCheckNeeded":boolean,"iadCheckNeeded":boolean,"uncertainty":"낮음"|"중간"|"높음","rationale":string,"cautions":string[],"woundBed":{"present":("granulation"|"slough"|"eschar"|"necrotic"|"dermis"|"other")[],"predominant":"granulation"|"slough"|"eschar"|"necrotic"|"dermis"|"other"|null}|null,"exudate":{"amount":"None"|"Scant"|"Small"|"Moderate"|"Large"|null,"type":"Serous"|"Serosanguineous"|"Sanguineous"|"Purulent"|null},"periwound":string[],"edge":"present"|"absent"|null,"keyFindings":string[],"differentials":[{"stage":"1"|"2"|"3"|"4"|"Unstageable"|"DTPI","reason":string}]}`;
+{"canAssess":boolean,"photoQuality":{"status":"PASS"|"CAUTION"|"FAIL","adequate":boolean,"issues":string[]},"suggestedStage":"1"|"2"|"3"|"4"|"Unstageable"|"DTPI"|"미정","blanchingCheckNeeded":boolean,"iadCheckNeeded":boolean,"uncertainty":"낮음"|"중간"|"높음","rationale":string,"cautions":string[],"woundBed":{"present":("granulation"|"slough"|"eschar"|"necrotic"|"dermis"|"other")[],"predominant":"granulation"|"slough"|"eschar"|"necrotic"|"dermis"|"other"|null}|null,"exudate":{"amount":"None"|"Scant"|"Small"|"Moderate"|"Large"|null,"type":"Serous"|"Serosanguineous"|"Sanguineous"|"Purulent"|null},"periwound":string[],"edge":"present"|"absent"|null,"keyFindings":string[],"differentials":[{"stage":"1"|"2"|"3"|"4"|"Unstageable"|"DTPI","reason":string}],"healing":{"status":"호전"|"변화 없음"|"악화 의심"|"판단 불가","evidence":string[]} | null}`;
 }
 
 async function analyzeWoundImage(dataUrl, ctx) {
@@ -1247,7 +1250,7 @@ function NewAssessment({ idx, initFollowWoundId, onSaved, onIdxUpdate, onCancel 
         if (!w) return;
         const ids = [...(w.assessmentIds || [])].reverse();
         for (const aid of ids) {
-          if (idx.assess[aid] && idx.assess[aid].hasPhoto) {
+          if (idx.assess[aid]) {
             const full = await loadFull(aid);
             if (full && full.photo) { setRefPhoto(full.photo.dataUrl); break; }
           }
@@ -1326,10 +1329,12 @@ function NewAssessment({ idx, initFollowWoundId, onSaved, onIdxUpdate, onCancel 
     setAiStatus("loading"); setAiErr("");
     try {
       const src = multiWound && targetPoint ? await annotateTargets(photo, [targetPoint]) : photo.dataUrl;
-      const r = await analyzeWoundImage(src, {
+      const aiImages = (mode === "follow") ? (refPhoto ? [refPhoto, src] : [src]) : src;
+      const r = await analyzeWoundImage(aiImages, {
         location: effLocation,
         lengthCm: size.lengthCm || null, widthCm: size.widthCm || null, depthCm: size.depthCm || null,
         multiTarget: !!(multiWound && targetPoint),
+        followUpCompare: mode === "follow" && !!refPhoto,
       });
       setAi(r); setAiStatus("done");
       if (r && r.canAssess !== false && r.blanchingCheckNeeded) setBlanchModal(true);
@@ -1964,6 +1969,19 @@ function NewAssessment({ idx, initFollowWoundId, onSaved, onIdxUpdate, onCancel 
                         </div>
                       )}
                       <div className="mb-1"><span className="text-xs text-slate-500 mr-2">AI Suggested Stage</span><StageBadge code={mapAiStage(ai.suggestedStage)} /></div>
+                      {ai.healing && (
+                        <div className={"mb-3 rounded-xl border p-3 " + (
+                          ai.healing.status === "호전" ? "border-emerald-200 bg-emerald-50" :
+                          ai.healing.status === "악화 의심" ? "border-red-200 bg-red-50" :
+                          ai.healing.status === "변화 없음" ? "border-slate-200 bg-slate-50" :
+                          "border-amber-200 bg-amber-50"
+                        )}>
+                          <div className="text-sm font-bold text-slate-800">Healing 평가 · 이전 사진과 비교</div>
+                          <div className="text-base font-bold mt-1 text-slate-900">{ai.healing.status}</div>
+                          {(ai.healing.evidence || []).map((e, i) => <p key={i} className="text-xs text-slate-700 mt-1">✓ {e}</p>)}
+                          <p className="text-[11px] text-slate-500 mt-2">촬영 조건 차이가 크면 경과 판단의 정확도가 떨어질 수 있습니다.</p>
+                        </div>
+                      )}
                       <div className="text-xs text-slate-500 mb-2">AI-assisted assessment · Clinical confirmation required — 최종 판단은 의료진이 합니다.</div>
                       <div className="text-xs font-bold text-slate-700 mb-1">Why this stage?</div>
                       <p className="text-sm text-slate-800 leading-relaxed">{ai.rationale}</p>
@@ -2395,6 +2413,13 @@ function NewAssessment({ idx, initFollowWoundId, onSaved, onIdxUpdate, onCancel 
                   </div>
                 </div>
               )}
+              {ai && ai.healing && (
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs font-bold text-slate-700">Healing 평가 · 이전 사진 비교</div>
+                  <div className="text-sm font-bold text-slate-900 mt-1">{ai.healing.status}</div>
+                  {(ai.healing.evidence || []).map((e, i) => <p key={i} className="text-xs text-slate-600 mt-1">✓ {e}</p>)}
+                </div>
+              )}
               <div className="mt-3 text-xs text-slate-500">Clinical check: Depth {size.depthCm ? "입력됨" : "미입력"} · Blanching {final.blanching ? (final.blanching === "blanch" ? "blanchable" : "non-blanchable") : "미시행"} · IAD {iadVerdictShortFrom(final.iadCheck) || "미시행"}{deeperChecked ? " · 심부구조 확인함" : ""}</div>
             </Card>
             {infFlag && (
@@ -2647,6 +2672,14 @@ function AssessmentDetail({ aid, onClose }) {
                     </div>
                   )}
                   {(rec.ai.cautions || []).map((c, i) => <p key={i} className="text-xs text-amber-800 mt-1">⚠ {c}</p>)}
+                  {rec.ai.healing && (
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="text-xs font-bold text-slate-700">Healing 평가 · 이전 사진 비교</div>
+                      <div className="text-sm font-bold text-slate-900 mt-1">{rec.ai.healing.status}</div>
+                      {(rec.ai.healing.evidence || []).map((e, i) => <p key={i} className="text-xs text-slate-600 mt-1">✓ {e}</p>)}
+                    </div>
+                  )}
+
                 </Card>
               )}
               <DisclaimerBox />

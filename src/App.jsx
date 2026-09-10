@@ -1968,7 +1968,7 @@ function NewAssessment({ idx, initFollowWoundId, onSaved, onIdxUpdate, onCancel 
                           </div>
                         </div>
                       )}
-                      <div className="mb-1"><span className="text-xs text-slate-500 mr-2">AI Suggested Stage</span><StageBadge code={mapAiStage(ai.suggestedStage)} /></div>
+                      {mode === "follow" && refPhoto && photo && (<div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-sm font-bold text-slate-800 mb-2">F/U 사진 비교</div><div className="grid grid-cols-2 gap-2"><div><div className="text-xs font-semibold text-slate-600 mb-1 text-center">치료 전</div><img src={refPhoto} className="w-full aspect-square object-cover rounded-lg border border-slate-200" /></div><div><div className="text-xs font-semibold text-slate-600 mb-1 text-center">치료 후</div><img src={photo.dataUrl} className="w-full aspect-square object-cover rounded-lg border border-slate-200" /></div></div></div>)}<div className="mb-1"><span className="text-xs text-slate-500 mr-2">AI Suggested Stage</span><StageBadge code={mapAiStage(ai.suggestedStage)} /></div>
                       {ai.healing && (
                         <div className={"mb-3 rounded-xl border p-3 " + (
                           ai.healing.status === "호전" ? "border-emerald-200 bg-emerald-50" :

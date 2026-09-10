@@ -64,7 +64,7 @@ app.post("/api/ai/analyze", async (req, res) => {
         }],
       }),
     });
-    const data = await r.json().catch(() => null);
+    console.log("[anthropic-request]", JSON.stringify({imageCount: images.length, prompt})); const data = await r.json().catch(() => null);
     console.log("[anthropic]", r.status, JSON.stringify(data));
     if (!r.ok || !data || data.error)
       return res.status(502).json({ error: (data && data.error && data.error.message) || `Anthropic API 오류 (${r.status})` });

@@ -66,6 +66,18 @@ app.post("/api/ai/analyze", async (req, res) => {
     });
     const data = await r.json().catch(() => null);
     console.log("[anthropic]", r.status);
+    if (r.ok && data?.usage) {
+      const count = key =>
+        Number.isSafeInteger(data.usage[key]) && data.usage[key] >= 0
+          ? data.usage[key] : 0;
+      console.log("[ai-usage]", JSON.stringify({
+        model: typeof data.model === "string" ? data.model : MODEL,
+        input_tokens: count("input_tokens"),
+        output_tokens: count("output_tokens"),
+        cache_creation_input_tokens: count("cache_creation_input_tokens"),
+        cache_read_input_tokens: count("cache_read_input_tokens")
+      }));
+    }
     if (!r.ok || !data || data.error)
       return res.status(502).json({ error: (data && data.error && data.error.message) || `Anthropic API 오류 (${r.status})` });
     const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");

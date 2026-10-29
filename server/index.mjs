@@ -1,3 +1,4 @@
+import {accountRouter} from "./account-routes.mjs";
 /* PI Assist — AI Proxy Server (Node/Express)
    역할: 이미지+프롬프트를 받아 Anthropic API로 중계하고 텍스트만 반환.
    - API 키는 서버 환경변수(ANTHROPIC_API_KEY)에만 존재
@@ -29,6 +30,8 @@ app.use("/api/", (req, res, next) => {
   arr.push(now); hits.set(ip, arr);
   next();
 });
+
+app.use("/api/account", accountRouter);
 
 app.get("/api/health", (_req, res) => res.json({ ok: true, model: MODEL, keyLoaded: !!KEY }));
 

@@ -21,7 +21,7 @@ export function checkedBalance(record) {
     throw new AccountError('BALANCE_UNAVAILABLE',503,'이용 횟수를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.');
   }
   return {status:'verified',freeRemaining:record.freeRemaining,paidRemaining:record.paidRemaining,
-    purchasesEnabled:false,creditEnforcementActive:false};
+    purchasesEnabled:false,creditEnforcementActive:true};
 }
 
 export function createAccountService({db,verifyIdToken,now=Date.now}) {
@@ -34,6 +34,7 @@ export function createAccountService({db,verifyIdToken,now=Date.now}) {
     return identityKey(claims);
   }
   return {
+    authenticate,
     async session(header) {
       const key=await authenticate(header);
       const ref=db.collection('aiCreditAccounts').doc(key);

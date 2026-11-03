@@ -1,3 +1,4 @@
+import {createCreditLedger} from './credit-ledger.mjs';
 import {Router} from 'express';
 import {initializeApp,applicationDefault,getApps} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
@@ -6,13 +7,15 @@ import {AccountError,createAccountService} from './account-core.mjs';
 
 // Lazy initialization: a missing Firebase config must not crash the existing AI proxy.
 let service;
-function accounts() {
+export function accounts() {
   if(!service) {
     const app=getApps().find(a=>a.name==='pressure-lens-accounts')||initializeApp({
       credential:applicationDefault(),projectId:'pressure-lens'
     },'pressure-lens-accounts');
     const auth=getAuth(app);
-    service=createAccountService({db:getFirestore(app),verifyIdToken:(token,revoked)=>auth.verifyIdToken(token,revoked)});
+    const db=getFirestore(app);
+    service=createAccountService({db,verifyIdToken:(token,revoked)=>auth.verifyIdToken(token,revoked)});
+    service.ledger=createCreditLedger({db});
   }
   return service;
 }
@@ -20,7 +23,12 @@ export const accountRouter=Router();
 accountRouter.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});
 function endpoint(action) {
   return async (req,res)=>{
-    try {res.json(await accounts()[action](req.get('authorization')));}
+    try {
+      const service=accounts();
+      const key=await service.authenticate(req.get('authorization'));
+      await service.ledger.recover(key);
+      res.json(await service[action](req.get('authorization')));
+    }
     catch(error) {
       if(error instanceof AccountError)return res.status(error.status).json({code:error.code,error:error.message});
       // Do not log tokens, account identifiers, credentials, or Firestore payloads.

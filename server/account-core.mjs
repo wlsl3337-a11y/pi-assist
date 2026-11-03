@@ -16,6 +16,8 @@ export function identityKey(claims) {
 }
 
 export function checkedBalance(record) {
+  if(record?.deletionState==='pending')throw new AccountError('DELETION_IN_PROGRESS',409,'계정 탈퇴 처리를 진행 중입니다. 잠시 후 다시 확인해주세요.');
+  if(record?.deletionState==='complete')throw new AccountError('SESSION_REQUIRED',409,'탈퇴한 계정입니다. 다시 이용하려면 로그인해주세요.');
   if (record?.schemaVersion !== 1 || ![record.freeRemaining,record.paidRemaining].every(n=>Number.isSafeInteger(n)&&n>=0) ||
       record.freeRemaining > 1 || !Number.isSafeInteger(record.freeRemaining+record.paidRemaining)) {
     throw new AccountError('BALANCE_UNAVAILABLE',503,'이용 횟수를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.');
@@ -40,7 +42,13 @@ export function createAccountService({db,verifyIdToken,now=Date.now}) {
       const ref=db.collection('aiCreditAccounts').doc(key);
       return db.runTransaction(async tx=>{
         const snapshot=await tx.get(ref);
-        if(snapshot.exists)return checkedBalance(snapshot.data());
+        if(snapshot.exists){
+          if(snapshot.data().deletionState==='complete'){
+            const recreated={schemaVersion:1,freeRemaining:0,paidRemaining:0,createdAtMs:now()};
+            tx.set(ref,recreated);return checkedBalance(recreated);
+          }
+          return checkedBalance(snapshot.data());
+        }
         const initial={schemaVersion:1,freeRemaining:1,paidRemaining:0,createdAtMs:now()};
         tx.create(ref,initial);
         return checkedBalance(initial);

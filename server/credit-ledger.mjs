@@ -28,7 +28,7 @@ export function createCreditLedger({db,now=Date.now}){
     if(!kind)fail('NO_CREDITS',402,'남은 AI 분석 횟수가 없습니다. 수동 사정과 기록 저장은 계속 이용할 수 있어요.');
     if(kind==='free')data.freeRemaining--;else data.paidRemaining--;
     holds[id]={kind,expiresAt:now()+LEASE_MS};
-    tx.set(ar,data);tx.create(op,{schemaVersion:1,status:'pending',kind,fingerprint,createdAtMs:now()});
+    tx.set(ar,data);tx.create(op,{schemaVersion:1,accountKey:key,status:'pending',kind,fingerprint,createdAtMs:now()});
     return {key,id};
    });
   },

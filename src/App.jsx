@@ -520,7 +520,7 @@ let aiTransmissionAccepted = false;
 const AI_REQUEST_TIMEOUT_MS = 60000;
 async function callClaude(dataUrls, promptText, options = {}) {
   if (!aiTransmissionAccepted) {
-    if (!window.confirm("AI 분석을 위해 선택한 상처 사진과 부위·크기 등 사정정보를 외부 서버(pi-assist.onrender.com)를 거쳐 Anthropic의 Claude API로 전송합니다. 사진에 이름·얼굴·등록번호 등 식별정보가 포함되지 않도록 확인하세요. 서버 운영 로그와 AI 제공업체의 처리·보관이 적용될 수 있으며, 기기에서 기록을 삭제해도 외부 처리 데이터가 함께 삭제되지는 않습니다. 전송에 동의하나요? 취소하면 이번 AI 요청은 전송하지 않으며 수동 사정은 이용할 수 있습니다.")) throw new Error("외부 AI 전송을 취소했습니다. 수동 사정으로 진행할 수 있습니다.");
+    if (!window.confirm("AI 분석을 위한 외부 전송 안내\n\n전송 항목\n선택한 상처 사진과 분석에 필요한 부위·크기·깊이·이전 사정 정보입니다. 경과 비교 시 이전 사진도 포함됩니다.\n\n전송 업체·위치\nRender 서버(미국 Ohio)를 거쳐 Anthropic의 Claude API로 전송합니다. Anthropic은 미국에 저장하며, 미국 외 국가에서도 처리할 수 있습니다.\n\n보관·삭제\n현재 Anthropic 조직 기본 설정은 30일 보관입니다. 법령·안전 조사 등에 따른 예외가 있습니다. 앱에서 기록을 삭제하거나 탈퇴해도 외부 데이터가 즉시 삭제되지는 않습니다.\n\n환자 정보 확인\n이름·얼굴·환자번호 등 식별정보를 제외하세요. 상처 사진은 건강정보가 될 수 있습니다. 이 확인이 환자 동의나 기관의 적법한 처리 권한을 대신하지 않습니다.\n\n전송에 동의하면 ‘확인’, 원하지 않으면 ‘취소’를 눌러주세요. 취소하면 AI 요청을 보내지 않으며 수동 사정·기록을 계속 이용할 수 있습니다.")) throw new Error("외부 AI 전송을 취소했습니다. 수동 사정으로 진행할 수 있습니다.");
     aiTransmissionAccepted = true;
   }
   const controller = new AbortController();
@@ -2081,7 +2081,7 @@ function NewAssessmentForm({ idx, initFollowWoundId, onSaved, onIdxUpdate, onCan
     const detected = detectHospitalRuler(pixels, prepared.w, prepared.h);
     return {scaleVisible: !detected,
       scale: mapScaleToPhoto(detected, prepared.rect, prepared.photoWidth, prepared.photoHeight),
-      note: detected ? detected.note + " · 파란 선의 위치를 확인해 주세요." : "병원용 파란 CM·INCHES 자의 실제 1mm 눈금 10칸을 확인하지 못했습니다. 자가 보이면 두 점으로 직접 보정해 주세요."};
+      note: detected ? detected.note : "자의 1mm 눈금 10칸을 확인하지 못했습니다. 사진 속 자의 눈금에 맞춰 두 점을 직접 지정해주세요."};
   }
 
   async function runRulerProbe(source) {
@@ -2694,7 +2694,7 @@ function NewAssessmentForm({ idx, initFollowWoundId, onSaved, onIdxUpdate, onCan
             {photo && measureMode === "ruler" ? (
               <Card>
                 <SectionTitle><span className="flex items-center gap-1.5"><Ruler size={16} /> Ruler 자동 인식 · 측정</span></SectionTitle>
-                {autoRulerStatus === "candidate" && <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2 mb-2">병원용 자의 실제 1mm 눈금 10칸을 찾았습니다. 실제 눈금 위치와 표시된 cm 간격을 확인한 후 아래 확인 버튼을 눌러주세요.</p>}
+                {autoRulerStatus === "candidate" && <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2 mb-2">연속된 눈금 10칸을 찾았습니다. 한 칸이 1mm인지 확인하고, 표시된 두 점이 실제 1cm 간격과 일치하는지 확인해주세요.</p>}
                 {autoRulerStatus === "visible" && <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-2">자동 기준을 찾지 못했습니다. 사진 속 자의 눈금에 맞춰 두 점을 직접 지정해 보정해주세요.</p>}
                 {autoRulerStatus === "error" && <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-2">자 인식 요청이 실패했습니다. 위 오류를 확인하고 다시 인식하거나 두 점을 지정해 보정할 수 있습니다.</p>}
                 <MeasureTool photo={photo} targets={multiWound ? targets : []} autoRulerStatus={autoRulerStatus}

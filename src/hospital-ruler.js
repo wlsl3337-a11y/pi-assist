@@ -116,7 +116,7 @@ function detectCore(p,w,h,{debug=false}={}) {
     const point=u=>{const v=a.slope*u+a.intercept;return {x:u*a.ux+v*a.nx,y:u*a.uy+v*a.ny};};
     const t=point(seq[0]),end=point(seq[10]);
   const p1={x:t.x/w,y:t.y/h},p2={x:end.x/w,y:end.y/h};
-  return {p1,p2,cm:1,note:'병원용 파란 CM·INCHES 자: 실제 1mm 눈금 10칸 = 1cm',method:'local-hospital-ruler',evidence:{metricPitch:a.pitch,inchPitch:b.pitch,metricTicks:a.points.length,inchTicks:b.points.length,ratio:b.pitch/a.pitch,observedIntervals:10}};
+  return {p1,p2,cm:1,note:'연속된 눈금 10칸을 찾았습니다. 한 칸이 1mm인지 확인하고, 표시된 두 점이 실제 1cm 간격과 일치하는지 확인해주세요.',method:'local-hospital-ruler',evidence:{metricPitch:a.pitch,inchPitch:b.pitch,metricTicks:a.points.length,inchTicks:b.points.length,ratio:b.pitch/a.pitch,observedIntervals:10}};
   }
   return null;
 }

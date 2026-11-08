@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {expiredTechnicalRequest,REQUEST_RETENTION_MS as D} from './request-retention.mjs';
+const now=100*D,old=now-D-1;
+const settled={schemaVersion:1,status:'succeeded',createdAtMs:old-1,finishedAtMs:old,accountKey:'synthetic'};
+test('linked and unlinked settled requests become eligible at 30 days after completion',()=>{for(const status of ['succeeded','failed','expired'])for(const accountKey of ['synthetic',undefined]){assert(expiredTechnicalRequest({...settled,status,accountKey},now));assert(!expiredTechnicalRequest({...settled,status,accountKey,finishedAtMs:now-D+1},now));assert(expiredTechnicalRequest({...settled,status,accountKey,finishedAtMs:now-D},now));}});
+test('newly completed old requests are retained for their full window',()=>{assert(!expiredTechnicalRequest({...settled,createdAtMs:0,finishedAtMs:now},now));});
+test('pending and unknown states are never removed by the settled-request policy',()=>{for(const status of ['pending','deleting','unknown',undefined])assert(!expiredTechnicalRequest({...settled,status},now));});
+test('existing expired records without finish time use creation time',()=>{assert(expiredTechnicalRequest({schemaVersion:1,status:'expired',createdAtMs:old},now));});
+test('invalid timestamps fail closed without deleting metadata',()=>{for(const finishedAtMs of [null,-1,NaN,Infinity,'1',now+1,old-2])assert(!expiredTechnicalRequest({...settled,finishedAtMs},now));assert(!expiredTechnicalRequest({...settled,createdAtMs:undefined},now));});
+test('balance and deletion-marker shapes never qualify for request cleanup',()=>{for(const data of [{schemaVersion:1,freeRemaining:1,paidRemaining:5},{schemaVersion:1,deletionState:'complete',trialUsed:true}])assert(!expiredTechnicalRequest(data,now));});

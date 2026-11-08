@@ -1,4 +1,4 @@
-import {expiredLegacyRequest} from './legacy-retention.mjs';
+import {expiredTechnicalRequest} from './request-retention.mjs';
 import {createAccountDeletion} from './account-deletion.mjs';
 import {createCreditLedger} from './credit-ledger.mjs';
 import {Router} from 'express';
@@ -27,20 +27,20 @@ export function accounts() {
       throw new AccountError('DELETION_IN_PROGRESS',503,'기록 삭제를 계속 진행하고 있습니다. 잠시 후 다시 확인해주세요.');
     };
     service.deletion=createAccountDeletion({db,auth,deleteLinkedRequests});
-    let legacyCursor=null;
-    const sweepLegacy=async()=>{
+    let retentionCursor=null;
+    const sweepRequests=async()=>{
       let query=db.collection('aiCreditRequests').orderBy(FieldPath.documentId()).limit(100);
-      if(legacyCursor)query=query.startAfter(legacyCursor);
+      if(retentionCursor)query=query.startAfter(retentionCursor);
       const page=await query.get();
-      const expired=page.docs.filter(item=>expiredLegacyRequest(item.data()));
+      const expired=page.docs.filter(item=>expiredTechnicalRequest(item.data()));
       if(expired.length){const batch=db.batch();for(const item of expired)batch.delete(item.ref);await batch.commit();}
-      legacyCursor=page.size===100?page.docs[page.docs.length-1].id:null;
+      retentionCursor=page.size===100?page.docs[page.docs.length-1].id:null;
     };
     const resume=async()=>{
       try{
         const pending=await db.collection('aiCreditAccounts').where('deletionState','==','pending').limit(10).get();
         for(const item of pending.docs){try{await service.deletion.finish(item.id,item.data().deletionUid);}catch{console.error('[account-deletion] retry pending');}}
-        await sweepLegacy();
+        await sweepRequests();
       }catch{console.error('[account-deletion] recovery unavailable');}
     };
     void resume();const worker=setInterval(()=>void resume(),60000);worker.unref?.();

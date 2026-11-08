@@ -1,3 +1,4 @@
+import {verifyRecordIdentity} from './ProfileApp.jsx';
 import AccountPrivacy from './AccountPrivacy.jsx';
 import React,{useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {Capacitor,registerPlugin} from '@capacitor/core';
@@ -6,7 +7,7 @@ import {createAccountClient} from './account-client.mjs';
 const nativeAuth=registerPlugin('FirebaseAuthentication');
 const account=createAccountClient({
   auth:nativeAuth,isAvailable:()=>Capacitor.isNativePlatform()&&Capacitor.isPluginAvailable('FirebaseAuthentication'),
-  request:(...args)=>fetch(...args),base:'https://pi-assist.onrender.com'
+  onIdentityChange:verifyRecordIdentity,request:(...args)=>fetch(...args),base:'https://pi-assist.onrender.com'
 });
 
 export async function getAnalysisHeaders(){
@@ -57,7 +58,7 @@ export default function AccountCredits({useBack=useNoBack,compact=false}) {
     {!user&&<p className="pl-account-note">로그인 시 Google 계정 식별정보와 이용권 정보를 Firebase에서 처리합니다. 사정 기록은 기기에 저장하며, AI 분석을 선택하면 선택한 사진과 필요한 사정 정보가 외부 서버로 전송됩니다.</p>}
     {balance?.creditEnforcementActive===true&&<p className="pl-account-note">AI 분석 성공 시 1회 차감됩니다. 분석 실패 또는 사진 분석 불가 결과는 차감하지 않습니다. 처리 중인 횟수는 최대 2분 동안 보류될 수 있습니다. 결제는 아직 준비 중입니다.</p>}
     {balance?.creditEnforcementActive===false&&<p className="pl-account-note">이용권 기능 준비 중입니다. 현재 분석 횟수 차감과 결제는 적용되지 않습니다.</p>}
-  </section><AccountPrivacy useBack={useBack} user={user} balance={balance} onDelete={()=>account.deleteAccount()}/>{showPlans&&<CreditPlans onClose={()=>setShowPlans(false)}/>}</>;
+  </section><AccountPrivacy useBack={useBack} user={user} balance={balance} onDelete={onProgress=>account.deleteAccount(onProgress)}/>{showPlans&&<CreditPlans onClose={()=>setShowPlans(false)}/>}</>;
 }
 
 function CreditPlans({onClose}) {

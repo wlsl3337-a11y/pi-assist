@@ -1,8 +1,16 @@
 {
   "appId": "com.piassist.app",
-  "appName": "PI Assist",
+  "appName": "Pressure Lens",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false
+  },
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": false,
+      "providers": [
+        "google.com"
+      ]
+    }
   }
 }

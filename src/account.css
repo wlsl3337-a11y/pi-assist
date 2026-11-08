@@ -1,0 +1,28 @@
+.pl-account-credit{padding:16px;border:1px solid #cde6e6;border-radius:18px;background:#f1faf9;margin:12px 0 18px;color:#173c48}
+.pl-account-credit-main{display:flex;gap:12px;align-items:center;justify-content:space-between}
+.pl-account-credit-main>div{min-width:0}.pl-account-credit strong{display:block;font-size:15px;line-height:1.5}
+.pl-account-credit p{font-size:12px;line-height:1.6;margin:5px 0 0;overflow-wrap:anywhere}
+.pl-account-credit .pl-account-email{color:#496572}.pl-account-credit .pl-account-note{font-size:11px;color:#5c7480;margin-top:10px}
+.pl-account-credit .pl-account-error{color:#9a342b}.pl-account-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pl-account-actions button{border:1px solid #acd3d0;background:#fff;color:#086f73;border-radius:10px;padding:8px 12px;font-size:12px;min-height:40px}
+.pl-account-actions button:disabled{opacity:.6}.pl-account-credit .pl-credit-plans{flex-shrink:0}
+.pl-account-credit .pl-credit-eyebrow{display:block;font-size:11px;font-weight:700;color:#087f83}
+.pl-account-credit .pl-credit-plans{border:1px solid #acd3d0;background:#fff;border-radius:10px;padding:8px 10px;font-size:12px;color:#086f73;min-height:40px}
+.pl-account-plans{width:min(440px,calc(100vw - 28px));max-height:85dvh;padding:20px;border:0;border-radius:20px;background:#fff;color:#173c48;overflow:auto;box-sizing:border-box}
+.pl-account-plans::backdrop{background:#10232e99}.pl-account-plans-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pl-account-plans h2{font-size:20px;font-weight:800;margin:0}.pl-account-plans h3{font-size:16px;font-weight:750;margin:0}
+.pl-account-plans p{font-size:12px;line-height:1.7;margin:12px 0}.pl-account-plans article{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:15px 0;border-bottom:1px solid #dce9e9}
+.pl-account-plans small{font-size:11px}.pl-account-plans strong{font-size:18px;font-weight:800}
+.pl-account-plans button{padding:8px 10px;border:1px solid #c4dada;border-radius:9px;font-size:12px;min-height:40px}
+.pl-account-plans button:disabled{background:#edf2f4;color:#6e8188}.pl-account-plans a{font-size:12px;color:#087f83;text-decoration:underline}
+
+.pl-account-credit.pl-account-compact{padding:5px 10px;margin:8px 14px 12px;border-radius:12px}
+.pl-account-compact-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
+.pl-account-credit.pl-account-compact strong{font-size:12px;line-height:1.4;font-weight:700;min-width:0}
+.pl-account-compact button{border:0;border-radius:9px;background:transparent;color:#087f83;font-size:11px;font-weight:700;padding:8px 4px;min-height:40px;white-space:nowrap;flex-shrink:0}
+.pl-account-compact button:disabled{opacity:.6}.pl-account-compact button:focus-visible{outline:2px solid #087f83;outline-offset:1px}
+.pl-account-credit.pl-account-compact .pl-account-error{font-size:11px;margin:2px 0 5px}
+
+/* Center the native modal even when the global CSS resets dialog margins. */
+dialog.pl-account-plans[open]{position:fixed;inset:0;margin:auto;transform:none;width:min(440px,calc(100vw - 32px));min-width:0;max-width:calc(100vw - 32px);height:fit-content;max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 40px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain;border:0;border-radius:20px;background:#fff;color:#173c48;box-shadow:0 16px 60px #10232e38}
+dialog.pl-account-plans::backdrop{background:#10232e80}

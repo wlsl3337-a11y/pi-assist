@@ -14,20 +14,20 @@ export default function AccountPrivacy({useBack=useNoBack,user=null,balance=null
 }
 function PrivacyDialog({kind,user,balance,onDelete,onBusy,onClose}){
   const ref=useRef(null),[phase,setPhase]=useState('ready'),[agreed,setAgreed]=useState(false),[message,setMessage]=useState('');
-  const pending=phase==='deleting',done=phase==='done';
+  const pending=phase==='verifying'||phase==='deleting',done=phase==='done';
   useEffect(()=>{const before=document.activeElement;const d=ref.current;d.showModal();return()=>{if(d.open)d.close();if(before?.isConnected)before.focus?.();};},[]);
   const deletion=kind==='delete';
   async function remove(){
     if(!agreed||pending||!user)return;
-    setPhase('deleting');onBusy(true);setMessage('');
-    try{const result=await onDelete();setPhase('done');setMessage(result.signoutFailed?'서버 계정 탈퇴는 완료됐습니다. 기기의 로그인 상태를 정리하려면 앱을 다시 열어주세요.':'탈퇴가 완료됐습니다.');}
+    setPhase('verifying');onBusy(true);setMessage('');
+    try{const result=await onDelete(setPhase);setPhase('done');setMessage(result.signoutFailed?'서버 계정 탈퇴는 완료됐습니다. 기기의 로그인 상태를 정리하려면 앱을 다시 열어주세요.':'탈퇴가 완료됐습니다.');}
     catch(e){setPhase('ready');setMessage(e.message||'탈퇴 완료를 확인하지 못했습니다.');}
     finally{onBusy(false);}
   }
   return <dialog ref={ref} className="pl-privacy-dialog" aria-labelledby="pl-privacy-title" onCancel={e=>{e.preventDefault();if(!pending)onClose();}}>
     <div className="pl-privacy-head"><h2 id="pl-privacy-title">{deletion?'회원 탈퇴':'개인정보 처리 안내'}</h2><button type="button" disabled={pending} onClick={onClose} aria-label="계정 및 개인정보 안내 닫기">닫기</button></div>
     {deletion?(done?<><p role="status">{message}</p><p>Google 계정 자체는 삭제되지 않습니다. 기기에 저장된 사정 기록은 별도이며, 필요하면 정보·설정에서 삭제할 수 있습니다.</p><button type="button" onClick={onClose}>확인</button></>:<>
-      <p>운영자의 메일 승인 없이 앱에서 직접 탈퇴할 수 있습니다. 마지막 단계에서 탈퇴할 Google 계정을 다시 확인합니다.</p>
+      <p>아래 계정에서 Pressure Lens를 탈퇴합니다. 본인 확인을 위해 Google 화면이 열리면 아래와 같은 이메일을 선택해주세요. Google 화면에는 로그인으로 표시되지만, 탈퇴 전 본인 확인 절차입니다.</p>
       <p className="pl-privacy-address">{user?.email||'탈퇴하려면 먼저 Google로 로그인해주세요.'}</p>
       <h3>삭제되는 정보</h3><ul><li>Firebase 앱 로그인 계정</li><li>서버의 이용권 잔액과 계정 정보</li><li>서버에서 이 계정과 연결할 수 있는 분석 요청 이력</li></ul>
       <p>재가입을 반복해 무료 체험을 받는 것을 방지하기 위한 최소 계정 해시는 남습니다. 재가입해도 무료 체험이 다시 지급되지 않습니다. 사진·프롬프트·분석 결과 본문은 이 정보에 포함되지 않습니다. 계정과 직접 연결할 수 없는 과거 기술 처리 이력은 작성일로부터 30일이 지나면 자동 정리 대상이 됩니다. 서버가 중지된 동안에는 정리가 지연될 수 있습니다.</p>
@@ -37,7 +37,7 @@ function PrivacyDialog({kind,user,balance,onDelete,onBusy,onClose}){
       <p>진행 중인 분석이 있으면 분석을 마친 뒤 탈퇴할 수 있습니다. 탈퇴한 계정은 복구할 수 없습니다.</p>
       <label className="pl-delete-agreement"><input type="checkbox" checked={agreed} disabled={pending} onChange={e=>setAgreed(e.target.checked)}/><span>삭제 범위와 남는 정보를 확인했고, 이 계정에서 탈퇴하겠습니다.</span></label>
       {message&&<p role="alert">{message}</p>}
-      <button className="pl-delete-primary" type="button" disabled={!agreed||pending||!user||!onDelete} onClick={remove}>{pending?'본인 확인 및 탈퇴 처리 중…':'Google 계정 확인 후 탈퇴'}</button>
+      <button className="pl-delete-primary" type="button" disabled={!agreed||pending||!user||!onDelete} onClick={remove}>{phase==='verifying'?'Google에서 본인 확인 중…':phase==='deleting'?'서버 정보 삭제 중…':'본인 확인하고 회원 탈퇴'}</button>
     </>):<>
       <p><strong>널스담</strong><br/>문의: {SUPPORT}</p>
       <h3>기기에 보관되는 사정 기록</h3><p>입력한 환자 구분 정보, 상처 부위·사진·측정값·소견·메모 및 임시저장은 현재 기기에 저장됩니다. 기관 지침에 따라 환자 식별정보를 최소화해 주세요.</p>

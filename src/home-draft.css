@@ -1,0 +1,6 @@
+.pl-home-draft{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:440px;min-height:44px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 13px;border:1px solid #c9e4df;border-radius:14px;background:#edf8f3;color:#174a49;box-shadow:0 2px 8px #174a4909;text-align:left;cursor:pointer}
+.pl-home-draft-copy{display:flex;align-items:center;gap:9px;min-width:0}.pl-home-draft-copy strong{font-size:12px;white-space:nowrap}.pl-home-draft-copy small{font-size:10px;color:#607d78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pl-home-draft-action{font-size:11px;font-weight:750;white-space:nowrap}.pl-home-draft-action span{font-size:17px;vertical-align:-1px}.pl-home-draft:focus-visible{outline:2px solid #087f83;outline-offset:2px}
+.pl-approved-home:has(.pl-home-draft){container-type:size}
+.pl-approved-home:has(.pl-home-draft) .pl-approved-canvas{width:min(100%,480px,calc((100cqh - 64px)*941/1672))}
+.pl-home-draft-warning{font-size:11px;cursor:default}
+@media(max-width:360px){.pl-home-draft-copy{gap:6px}.pl-home-draft-copy small{max-width:85px}}

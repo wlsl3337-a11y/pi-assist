@@ -15,7 +15,7 @@ export function createCreditLedger({db,now=Date.now}){
  const account=key=>db.collection('aiCreditAccounts').doc(key);
  const operation=(key,id)=>db.collection('aiCreditRequests').doc(createHash('sha256').update(key+':'+id).digest('hex'));
  return {
-  async recover(key){return db.runTransaction(async tx=>{const ref=account(key),s=await tx.get(ref);if(!s.exists)return;const data=releaseExpired(s.data(),now());tx.set(ref,data);});},
+  async recover(key){return db.runTransaction(async tx=>{const ref=account(key),s=await tx.get(ref);if(!s.exists||s.data().deletionState==='complete')return;const data=releaseExpired(s.data(),now());tx.set(ref,data);});},
   async reserve(key,id,fingerprint){
    if(!/^[a-f0-9-]{36}$/.test(id||''))fail('REQUEST_ID_REQUIRED',400,'앱을 업데이트한 뒤 다시 시도해주세요.');
    return db.runTransaction(async tx=>{

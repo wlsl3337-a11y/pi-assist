@@ -1,7 +1,8 @@
+import {localAccountDeletion} from './local-account-deletion.mjs';
 import {rememberDeletion,deletionError} from './deletion-feedback.mjs';
 // Tokens stay in the native Firebase SDK. Only the current request gets a token;
 // neither tokens nor credit balances are persisted in browser storage.
-export function createAccountClient({auth,isAvailable,request,base,onIdentityChange=async()=>{}}) {
+export function createAccountClient({auth,isAvailable,request,base,onIdentityChange=async()=>{},localDeletion=localAccountDeletion}) {
   let state={phase:'idle',user:null,balance:null,error:''};
   let generation=0,started=false,busy=false;
   const listeners=new Set();
@@ -58,13 +59,14 @@ export function createAccountClient({auth,isAvailable,request,base,onIdentityCha
     if(!isAvailable())throw Error('Android 앱에서 Google 계정을 확인해주세요.');
     const original=state.user?.uid;
     if(!original)throw Error('탈퇴할 계정으로 먼저 로그인해주세요.');
-    busy=true;const ticket=++generation;
+    busy=true;const ticket=++generation;let localJob=null,serverDeleted=false;
     publish({phase:'loading',error:''});
     try{
       onProgress('verifying');
       const verified=await auth.signInWithGoogle();
       await onIdentityChange(verified.user||null);
       if(!verified.user||verified.user.uid!==original)throw Error('탈퇴할 계정과 다른 Google 계정을 선택했습니다. 계정을 확인한 뒤 다시 시도해주세요.');
+      localJob=await localDeletion.prepare(verified.user);
       onProgress('deleting');
       const {token}=await auth.getIdToken({forceRefresh:true});
       if(!token)throw Error('본인 확인을 완료하지 못했습니다.');
@@ -78,11 +80,20 @@ export function createAccountClient({auth,isAvailable,request,base,onIdentityCha
         const known=['RECENT_LOGIN_REQUIRED','ANALYSIS_IN_PROGRESS','REFUND_REQUIRED','DELETION_IN_PROGRESS','DELETION_PENDING'];
         throw Error(known.includes(data?.code)?data.error:response.status===404?'서버 업데이트가 아직 반영되지 않았습니다. 탈퇴는 완료되지 않았습니다.':'탈퇴 완료를 확인하지 못했습니다. 잠시 후 다시 확인해주세요.');
       }
-      rememberDeletion();
+      serverDeleted=true;
+      onProgress('local-cleanup');
+      await localDeletion.complete(localJob);
+      rememberDeletion(true);
       let signoutFailed=false;try{await auth.signOut();await onIdentityChange(null);}catch{signoutFailed=true;}
       if(ticket===generation)publish({phase:'signedout',user:null,balance:null,error:''});
       return {status:'deleted',signoutFailed};
     }catch(error){
+      if(serverDeleted){
+        const message='서버 탈퇴는 완료됐지만 기기 기록 삭제를 완료하지 못했습니다. 앱을 다시 열면 기기 삭제를 다시 시도합니다.';
+        if(ticket===generation)publish({phase:'error',user:null,balance:null,error:message});
+        throw Error(message);
+      }
+      if(localJob)try{localDeletion.cancel(localJob);}catch{}
       let current;try{current=await auth.getCurrentUser();await onIdentityChange(current.user||null);}catch{}
       if(ticket===generation)publish({phase:'error',user:current?.user?{uid:current.user.uid,email:current.user.email||''}:null,balance:null,error:''});
       throw Error(deletionError(error));

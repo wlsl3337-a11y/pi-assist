@@ -3,6 +3,10 @@ const META='pl:legacy-owner:v1';
 export const LEGACY_OWNER_EMAIL='wlsl3337@gmail.com';
 export const recordKey=k=>k==='pi:index:v1'||k.startsWith('pi:a:')||k.startsWith('pi:draft:v1:');
 let bound=null;
+const deletionLocks=new Set();
+export function lockRecordProfile(key){if(!/^[a-f0-9]{64}$/.test(key))throw Error('삭제할 기록 보관함을 확인하지 못했습니다.');deletionLocks.add(key);}
+export function unlockRecordProfile(key){deletionLocks.delete(key);}
+export const recordProfileWritable=key=>!deletionLocks.has(key);
 export function bindRecordProfile(profile){
  if(bound&&bound.key!==profile.key)throw Error('계정 변경 후 화면을 다시 열어주세요.');
  bound=Object.freeze({...profile});return bound;
@@ -24,7 +28,11 @@ export function createProfileStorage(raw,profile=currentRecordProfile()){
  const key=k=>{if(typeof k!=='string'||!recordKey(k))throw Error('지원하지 않는 기록 키입니다.');return prefix+k;};
  return Object.freeze({
   async getItem(k){return raw.getItem(key(k));},
-  async setItem(k,v){return raw.setItem(key(k),v);},
+  async setItem(k,v){
+   const writable=()=>recordProfileWritable(profile.key);
+   if(!writable())throw Error('회원 탈퇴 처리 중에는 기록을 저장할 수 없습니다.');
+   return raw.setItem(key(k),v,writable);
+  },
   async removeItem(k){return raw.removeItem(key(k));},
   async listKeys(p){if(typeof p!=='string'||!p.startsWith('pi:'))throw Error('지원하지 않는 기록 목록입니다.');return(await raw.listKeys(prefix+p)).filter(k=>k.startsWith(prefix)&&recordKey(k.slice(prefix.length))).map(k=>k.slice(prefix.length));},
   async clearLegacyBackup(){
